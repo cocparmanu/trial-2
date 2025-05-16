@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mark Attendance</title>
+</head>
+<body>
+  <h2>Getting your location...</h2>
+  <script>
+    function redirectToForm(lat, lon) {
+      // Paste your pre-filled form link here, replacing only the lat/lon value
+      const formURL = `https://docs.google.com/forms/d/e/1FAIpQLScIqbPYZA1jYISSeSK-nbfc7DHZHidUf626p-ggJokpEcX44Q/viewform?usp=pp_url&entry.926520969=30.702996735944645&entry.1644663357=76.22463177662442`;
+      window.location.href = formURL;
+    }
+
+    function showError(msg) {
+      document.body.innerHTML = "<h3>Error:</h3><p>" + msg + "</p>";
+    }
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude.toFixed(6);
+          const lon = position.coords.longitude.toFixed(6);
+          redirectToForm(lat, lon);
+        },
+        () => showError("Location access denied. Please enable GPS and refresh.")
+      );
+    } else {
+      showError("Geolocation not supported by your browser.");
+    }
+  </script>
+</body>
+</html>

@@ -1,33 +1,66 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Mark Attendance</title>
+  <meta charset="UTF-8">
+  <title>GPS Attendance Check</title>
 </head>
 <body>
-  <h2>Getting your location...</h2>
+  <h2>Checking your location...</h2>
+
   <script>
-    function redirectToForm(lat, lon) {
-      // Paste your pre-filled form link here, replacing only the lat/lon value
-      const formURL = `https://docs.google.com/forms/d/e/1FAIpQLScIqbPYZA1jYISSeSK-nbfc7DHZHidUf626p-ggJokpEcX44Q/viewform?usp=pp_url&entry.926520969=30.702996735944645&entry.1644663357=76.22463177662442`;
-      window.location.href = formURL;
+    // Target location (office or allowed zone)
+    const TARGET_LAT = 30.703031946680753;
+    const TARGET_LON = 76.22462732256064;
+
+    // Google Form URL — prefill keys will be dynamically filled
+    const formBaseURL = "https://docs.google.com/forms/d/e/1FAIpQLScIqbPYZA1jYISSeSK-nbfc7DHZHidUf626p-ggJokpEcX44Q/viewform?usp=pp_url";
+
+    // Replace these with actual form entry field IDs
+    const latFieldID = "entry.926520969";
+    const lonFieldID = "entry.1644663357";
+
+    // Function to calculate distance (Haversine formula)
+    function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
+      const R = 6371000; // Radius of Earth in meters
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a =
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
     }
 
-    function showError(msg) {
-      document.body.innerHTML = "<h3>Error:</h3><p>" + msg + "</p>";
+    // Main logic
+    function handleLocation(position) {
+      const userLat = position.coords.latitude;
+      const userLon = position.coords.longitude;
+      const distance = getDistanceFromLatLonInMeters(userLat, userLon, TARGET_LAT, TARGET_LON);
+
+      if (distance <= 500) {
+        // Build live Google Form URL with real GPS
+        const formURL = `${formBaseURL}&${latFieldID}=${userLat}&${lonFieldID}=${userLon}`;
+        window.location.href = formURL;
+      } else {
+        document.body.innerHTML = `
+          <h3>Access Denied</h3>
+          <p>You are outside the 500-meter allowed range.</p>
+          <p>Your Location: ${userLat.toFixed(6)}, ${userLon.toFixed(6)}</p>
+          <p>Distance from allowed zone: ${Math.round(distance)} meters</p>
+        `;
+      }
     }
 
+    function handleError(error) {
+      document.body.innerHTML = `<h3>Error</h3><p>Could not get your location: ${error.message}</p>`;
+    }
+
+    // Ask for location
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const lat = position.coords.latitude.toFixed(6);
-          const lon = position.coords.longitude.toFixed(6);
-          redirectToForm(lat, lon);
-        },
-        () => showError("Location access denied. Please enable GPS and refresh.")
-      );
+      navigator.geolocation.getCurrentPosition(handleLocation, handleError);
     } else {
-      showError("Geolocation not supported by your browser.");
+      document.body.innerHTML = "<p>Geolocation is not supported by your browser.</p>";
     }
   </script>
 </body>
